@@ -1,0 +1,33 @@
+name: slack-shape-mirror
+on:
+  issues:
+    types: [opened]
+permissions:
+  issues: read
+jobs:
+  send-notification:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Send notification (local echo instead of Slack)
+        env:
+          ISSUE_TITLE: ${{ github.event.issue.title }}
+          ISSUE_BODY: ${{ github.event.issue.body }}
+          REPOSITORY_NAME: ${{ github.repository }}
+          GITHUB_EVENT_ISSUE_HTML_URL: ${{ github.event.issue.html_url }}
+        run: |
+          python3 <<EOF
+          import os, json
+          headers = {'Content-Type': 'application/json'}
+          message = {
+              "text": f"New issue created in {os.environ['REPOSITORY_NAME']}: *{os.environ['ISSUE_TITLE']}*\n{os.environ['GITHUB_EVENT_ISSUE_HTML_URL']}",
+              "REPOSITORY_NAME": os.environ['REPOSITORY_NAME'],
+              "GITHUB_ISSUE": os.environ['GITHUB_EVENT_ISSUE_HTML_URL'],
+              "ISSUE_TITLE": os.environ['ISSUE_TITLE']
+          }
+          print("SLACK_PAYLOAD_BEGIN")
+          print(json.dumps(message))
+          print("SLACK_PAYLOAD_END")
+          print("MARKER_TITLE_PRESENT" if os.path.exists('/tmp/pwned_title') else "MARKER_TITLE_ABSENT")
+          print("MARKER_BODY_PRESENT" if os.path.exists('/tmp/pwned_body') else "MARKER_BODY_ABSENT")
+          print("SHELLCMD_MARKER", os.path.exists('/tmp/pwned_shell'))
+          EOF
