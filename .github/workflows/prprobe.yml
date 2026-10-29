@@ -1,0 +1,17 @@
+name: PR Probe
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+permissions: {}
+jobs:
+  up:
+    runs-on: ubuntu-latest
+    steps:
+      - name: dump
+        env:
+          PR_HEAD_REPO: ${{ github.event.pull_request.head.repo.full_name }}
+          GHA_SHA: ${{ github.sha }}
+        run: |
+          echo "PR_HEAD_REPO=[$PR_HEAD_REPO]"
+          echo "GHA_SHA=[$GHA_SHA]"
+          echo "probe ok"
