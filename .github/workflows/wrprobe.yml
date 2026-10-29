@@ -1,0 +1,31 @@
+name: WR Probe
+on:
+  workflow_run:
+    workflows: ["PR Probe"]
+    types: [completed]
+permissions: {}
+jobs:
+  consumer:
+    if: github.event.workflow_run.event == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - name: dump
+        env:
+          WR_HEAD_REPO: ${{ github.event.workflow_run.head_repository.full_name }}
+          WR_BASE_REPO: ${{ github.event.workflow_run.repository.full_name }}
+          WR_HEAD_BRANCH: ${{ github.event.workflow_run.head_branch }}
+          WR_HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
+          WR_PATH: ${{ github.event.workflow_run.path }}
+          WR_PRS: ${{ toJSON(github.event.workflow_run.pull_requests) }}
+          WR_NAME: ${{ github.event.workflow_run.name }}
+          WR_CONCL: ${{ github.event.workflow_run.conclusion }}
+        run: |
+          echo "WR_HEAD_REPO=[$WR_HEAD_REPO]"
+          echo "WR_BASE_REPO=[$WR_BASE_REPO]"
+          echo "WR_HEAD_BRANCH=[$WR_HEAD_BRANCH]"
+          echo "WR_HEAD_SHA=[$WR_HEAD_SHA]"
+          echo "WR_PATH=[$WR_PATH]"
+          echo "WR_NAME=[$WR_NAME]"
+          echo "WR_CONCL=[$WR_CONCL]"
+          echo "WR_PRS=$WR_PRS"
+          echo "HOST=${GITHUB_REPOSITORY}"
